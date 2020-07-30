@@ -52,9 +52,8 @@ public class TapCartPipeline {
 					if (data.get(4).isEmpty()) {
 						data.set(4, "0.00");
 					}
-					elementRow = Row.withSchema(eventSchema)
-							.addValues(data.get(0), data.get(1), data.get(2), data.get(3), new BigDecimal(data.get(4)), data.get(5))
-							.build();
+					elementRow = Row.withSchema(eventSchema).addValues(data.get(0), data.get(1), data.get(2),
+							data.get(3), new BigDecimal(data.get(4)), data.get(5)).build();
 				}
 
 				// Output the Row representing the current POJO
@@ -85,36 +84,37 @@ public class TapCartPipeline {
 	public static class FormatAsTextFnRow extends SimpleFunction<Row, String> {
 		@Override
 		public String apply(Row input) {
-			return input.getValues().toString();
+			return input.getValues().toString().replace("[", "").replace("]", "");
 		}
 	}
 
 	public static void main(String[] args) {
 		Pipeline p = Pipeline.create(PipelineOptionsFactory.fromArgs(args).withValidation().create());
-		
 
 		// Process Device Data
 		PCollection<Row> devices = p
-				.apply(TextIO.read().from("gs://49b661f4-6504-4613-8917-c105e720a266/TapcartChallengeData/devices.csv"))
-				.apply(Filter.by((String line) -> !line.isEmpty()))
-				.apply(Filter.by((String line) -> !line.equals("ID,User"))).apply(ParDo.of(new CastToRow()))
-				.setRowSchema(deviceSchema);
+				.apply("Read Devices Data",
+						TextIO.read()
+								.from("gs://49b661f4-6504-4613-8917-c105e720a266/TapcartChallengeData/devices.csv"))
+				.apply("Skip Blank Rows", Filter.by((String line) -> !line.isEmpty()))
+				.apply("Skip Header Rows", Filter.by((String line) -> !line.equals("ID,User")))
+				.apply("Cast to Row with Schema", ParDo.of(new CastToRow())).setRowSchema(deviceSchema);
 
 		// Process Events Data
 		PCollection<Row> events = p
-				.apply(TextIO.read().from("gs://49b661f4-6504-4613-8917-c105e720a266/TapcartChallengeData/events.csv"))
-				.apply(Filter.by((String line) -> !line.isEmpty()))
-				.apply(Filter
+				.apply("Read Events Data", TextIO.read().from("gs://49b661f4-6504-4613-8917-c105e720a266/TapcartChallengeData/events.csv"))
+				.apply("Skip Blank Rows",Filter.by((String line) -> !line.isEmpty()))
+				.apply("Skip Header Rows",Filter
 						.by((String line) -> !line.equals("deviceId,session,timestamp,timstamp_iso,totalPrice,type")))
-				.apply(MapElements.into(TypeDescriptors.strings()).via((String line) -> line.replace("$", "")))
-				.apply(ParDo.of(new CastToRow())).setRowSchema(eventSchema);
+				.apply("Remove $ Char",MapElements.into(TypeDescriptors.strings()).via((String line) -> line.replace("$", "")))
+				.apply("Cast to Row with Schema",ParDo.of(new CastToRow())).setRowSchema(eventSchema);
 
 		PCollectionTuple eventsAndDevices = PCollectionTuple.of(new TupleTag<>("events"), events)
 				.and(new TupleTag<>("devices"), devices);
 
 		// Create a PCollection for Enriched Events
-		PCollection<Row> EnrichedEvents = eventsAndDevices.apply(SqlTransform
-				.query("SELECT * FROM events INNER JOIN devices ON events.deviceId = devices.ID"));
+		PCollection<Row> EnrichedEvents = eventsAndDevices
+				.apply(SqlTransform.query("SELECT * FROM events AS a LEFT JOIN devices AS b ON a.deviceId = b.ID"));
 
 		EnrichedEvents.apply(MapElements.via(new FormatAsTextFnRow()))
 				.apply(TextIO.write().to("gs://49b661f4-6504-4613-8917-c105e720a266/EnrichedEvents").withoutSharding());
