@@ -49,8 +49,11 @@ public class TapCartPipeline {
 				if (data.size() == 2) {
 					elementRow = Row.withSchema(deviceSchema).addValues(data.get(0), data.get(1)).build();
 				} else {
+					if (data.get(4).isEmpty()) {
+						data.set(4, "0.00");
+					}
 					elementRow = Row.withSchema(eventSchema)
-							.addValues(data.get(0), data.get(1), data.get(2), data.get(3), data.get(4), data.get(5))
+							.addValues(data.get(0), data.get(1), data.get(2), data.get(3), new BigDecimal(data.get(4)), data.get(5))
 							.build();
 				}
 
@@ -88,6 +91,7 @@ public class TapCartPipeline {
 
 	public static void main(String[] args) {
 		Pipeline p = Pipeline.create(PipelineOptionsFactory.fromArgs(args).withValidation().create());
+		
 
 		// Process Device Data
 		PCollection<Row> devices = p
