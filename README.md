@@ -25,14 +25,17 @@
 
     * Design Doc
     * More Tests
-    * Logging
+    * More Logging
     * Performance Profiling
+    * Input Parameter Validation
+    * Performance Metrics
+    * Data Validation
     
 ### If this were an actual project were, the requirements made clear? What could be added or clarified?
 
-	*
+	* There were many issues with the given requirements, besides the typos : )
 
 ### In your experience, what kind of requirements work best? What kind of template would you use to define requirements for a group of developers which you were leading?
-* JIRA Tickets
-* Agile Methodology 
-* The more specific the requirements the better
+	* JIRA Tickets
+	* Agile Methodology 
+	* The more specific the requirements the better
