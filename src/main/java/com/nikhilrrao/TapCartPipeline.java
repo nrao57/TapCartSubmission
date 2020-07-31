@@ -11,17 +11,12 @@ import org.apache.beam.sdk.extensions.sql.SqlTransform;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.schemas.Schema;
-import org.apache.beam.sdk.schemas.transforms.Group;
-import org.apache.beam.sdk.schemas.transforms.Join;
-import org.apache.beam.sdk.schemas.transforms.Select;
-import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.transforms.Sum;
-import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.Row;
@@ -133,9 +128,9 @@ public class TapCartPipeline {
 		PCollectionTuple tupleEvents = PCollectionTuple.of(new TupleTag<>("events"), events);
 
 		tupleEvents.apply(SqlTransform.query("SELECT (MAX(ts)-MIN(ts))/COUNT(ts) FROM events GROUP BY session"))
-				.apply(ParDo.of(new CastToLongs()));//.apply(Sum.longsGlobally());
-				//.apply(MapElements.via(new FormatAsTextFnLong()))
-				//.apply(TextIO.write().to(bucketName + folderId + "/Average_Session_Length.csv").withoutSharding());
+				.apply(ParDo.of(new CastToLongs())).apply(Sum.longsGlobally())
+				.apply(MapElements.via(new FormatAsTextFnLong()))
+				.apply(TextIO.write().to(bucketName + folderId + "/Average_Session_Length.csv").withoutSharding());
 
 		// Calculate Count of APP_OPENED
 		PCollectionTuple tupleEvents2 = PCollectionTuple.of(new TupleTag<>("events"), events);

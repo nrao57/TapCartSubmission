@@ -10,6 +10,8 @@
 
 ## Directed Acyclic Graph <a name="DAG"></a>
 
+![DAG](DAGimage.PNG)
+
 ## Questions <a name="Questions"></a>
 
 ### If this were an actual project, what steps would you take to get it ready for production?
